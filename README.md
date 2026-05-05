@@ -32,6 +32,7 @@ commands and their matching handlers.
 # Tech Stack
 
 - Languages used: Go
+- Frameworks/libraries: tview (TUI)
 
 ---
 
