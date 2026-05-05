@@ -41,16 +41,25 @@ func (client *Client) connect() error {
 	return err
 }
 
-func (client *Client) register() {
+func (client *Client) register() error {
 	nick := Message{"", "NICK", []string{client.nick}}
-	client.send(nick)
+	err := client.send(nick)
+	if err != nil {
+		return err
+	}
 
 	user := Message{"", "USER", []string{client.nick, "0", "*", client.user}}
-	client.send(user)
+	err = client.send(user)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
-func (client *Client) send(msg Message) {
-	fmt.Fprintf(client.conn, "%s", msg)
+func (client *Client) send(msg Message) error {
+	_, err := fmt.Fprintf(client.conn, "%s", msg)
+	return err
 }
 
 func (client *Client) run() {
@@ -79,7 +88,11 @@ func (client *Client) run() {
 			if !ok {
 				return
 			}
-			msg := parse(line)
+			msg, err := parse(line)
+			if err != nil {
+				fmt.Println("parse error: ", err)
+				continue
+			}
 			if handler, ok := client.handlers[msg.command]; ok {
 				handler(msg)
 			} else {
@@ -91,7 +104,11 @@ func (client *Client) run() {
 				fmt.Println(err)
 			} else {
 				if msg.command != "" {
-					client.send(msg)
+					err = client.send(msg)
+					if err != nil {
+						fmt.Println("send error: ", err)
+						return
+					}
 					if msg.command == "PRIVMSG" {
 						echo := Message{client.nick, msg.command, msg.parameters}
 						client.handlePrivmsg(echo)

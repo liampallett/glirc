@@ -1,6 +1,9 @@
 package main
 
-import "strings"
+import (
+	"errors"
+	"strings"
+)
 
 type Message struct {
 	prefix     string
@@ -8,18 +11,31 @@ type Message struct {
 	parameters []string
 }
 
-func parse(line string) Message {
+func parse(line string) (Message, error) {
+	if line == "" {
+		return Message{}, errors.New("attemped to parse an empty line")
+	}
+
 	var prefix string
 	var command string
 	var parameters []string
 
 	if line[0] == ':' {
-		prefix = line[1:strings.Index(line, " ")]
-		line = strings.SplitN(line, " ", 2)[1]
+		spaceIndex := strings.Index(line, " ")
+		if spaceIndex == -1 {
+			return Message{}, errors.New("prefix with no command")
+		}
+		prefix = line[1:spaceIndex]
+		line = line[spaceIndex+1:]
 	}
 
-	command = line[0:strings.Index(line, " ")]
-	line = strings.SplitN(line, " ", 2)[1]
+	spaceIndex := strings.Index(line, " ")
+	if spaceIndex == -1 {
+		command = line
+		return Message{prefix, command, parameters}, nil
+	}
+	command = line[0:spaceIndex]
+	line = line[spaceIndex+1:]
 
 	for line != "" {
 		if line[0] == ':' {
@@ -35,7 +51,7 @@ func parse(line string) Message {
 		line = strings.SplitN(line, " ", 2)[1]
 	}
 
-	return Message{prefix, command, parameters}
+	return Message{prefix, command, parameters}, nil
 }
 
 func (msg Message) String() string {
