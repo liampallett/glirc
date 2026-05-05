@@ -136,6 +136,12 @@ func (client *Client) parseInput(line string) (Message, error) {
 			}
 			client.currentChannel = lineParts[1]
 			msg = Message{"", "JOIN", []string{client.currentChannel}}
+		case "part":
+			if client.currentChannel == "" {
+				return Message{}, errors.New("trying to part from no channel")
+			}
+			msg = Message{"", "PART", []string{client.currentChannel}}
+			client.currentChannel = ""
 		case "quit":
 			if len(lineParts) > 1 {
 				msg = Message{"", "QUIT", []string{lineParts[1]}}
