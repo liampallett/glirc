@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"net"
-	"os"
 	"strings"
 )
 
@@ -19,10 +18,11 @@ type Client struct {
 	currentChannel string
 	ignored        map[string]bool
 	handlers       map[string]func(Message)
+	ui             UI
 }
 
-func NewClient(nick, user, server string, port int) *Client {
-	client := &Client{nick: nick, user: user, server: server, port: port}
+func NewClient(nick, user, server string, port int, ui UI) *Client {
+	client := &Client{nick: nick, user: user, server: server, port: port, ui: ui}
 	client.ignored = map[string]bool{}
 	client.handlers = map[string]func(Message){
 		"PING":    client.handlePing,
@@ -62,60 +62,26 @@ func (client *Client) send(msg Message) error {
 	return err
 }
 
-func (client *Client) run() {
-	buffServer := make(chan string)
-	go func() {
-		scanner := bufio.NewScanner(client.conn)
-		for scanner.Scan() {
-			msg := scanner.Text()
-			buffServer <- msg
-		}
-		close(buffServer)
-	}()
+func (client *Client) print(format string, args ...any) {
+	fmt.Fprintf(client.ui.Chat, format, args...)
+}
 
-	buffClient := make(chan string)
-	go func() {
-		scanner := bufio.NewScanner(os.Stdin)
-		for scanner.Scan() {
-			msg := scanner.Text()
-			buffClient <- msg
-		}
-	}()
+func (client *Client) readLoop() {
+	scanner := bufio.NewScanner(client.conn)
 
-	for {
-		select {
-		case line, ok := <-buffServer:
-			if !ok {
-				return
-			}
-			msg, err := parse(line)
-			if err != nil {
-				fmt.Println("parse error: ", err)
-				continue
-			}
-			if handler, ok := client.handlers[msg.command]; ok {
-				handler(msg)
-			} else {
-				fmt.Println(line)
-			}
-		case line := <-buffClient:
-			msg, err := client.parseInput(line)
-			if err != nil {
-				fmt.Println(err)
-			} else {
-				if msg.command != "" {
-					err = client.send(msg)
-					if err != nil {
-						fmt.Println("send error: ", err)
-						return
-					}
-					if msg.command == "PRIVMSG" {
-						echo := Message{client.nick, msg.command, msg.parameters}
-						client.handlePrivmsg(echo)
-					}
-				}
-			}
+	for scanner.Scan() {
+		line := scanner.Text()
+		msg, err := parse(line)
+		if err != nil {
+			client.print("parse error: %s\n", err)
+			continue
 		}
+		if handler, ok := client.handlers[msg.command]; ok {
+			handler(msg)
+		} else {
+			client.print("%s\n", line)
+		}
+		client.ui.App.QueueUpdateDraw(func() {})
 	}
 }
 
