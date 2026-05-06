@@ -8,6 +8,7 @@ import (
 func (client *Client) cmdHelp(args string) (Message, error) {
 	cmds := map[string][]string{
 		"motd":     {"display current server message of the day", ""},
+		"clear":    {"clear the chat window", ""},
 		"quit":     {"quit the application", "optional quit message"},
 		"nick":     {"change your nickname displayed on the server", "new nickname"},
 		"join":     {"join the specified channel", "#channel name"},
@@ -39,6 +40,11 @@ func (client *Client) cmdHelp(args string) (Message, error) {
 			}
 		}
 	}
+	return Message{}, nil
+}
+
+func (client *Client) cmdClear(args string) (Message, error) {
+	client.ui.Chat.Clear()
 	return Message{}, nil
 }
 

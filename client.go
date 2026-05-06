@@ -133,6 +133,8 @@ func (client *Client) parseInput(line string) (Message, error) {
 	switch command {
 	case "help":
 		return client.cmdHelp(args)
+	case "clear":
+		return client.cmdClear(args)
 	case "motd":
 		return client.cmdMOTD(args)
 	case "quit":
