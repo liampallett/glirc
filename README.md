@@ -1,6 +1,6 @@
-# gchat
+# glirc
 
-gchat is a CLI-based IRC client written in Go.
+glirc is a CLI-based IRC client written in Go.
 
 ---
 
@@ -58,10 +58,10 @@ directory after cloning the repository.
 ```
 
 ```
-git clone https://github.com/liampallett/gchat.git 
-cd gchat
+git clone https://github.com/liampallett/glirc.git 
+cd glirc
 go build
-./gchat
+./glirc
 ```
 
 ---
