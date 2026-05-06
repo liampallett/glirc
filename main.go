@@ -31,16 +31,16 @@ func main() {
 		}
 		if msg.command != "" {
 			err = client.send(msg)
+			if msg.command == "QUIT" {
+				client.ui.App.Stop()
+				return
+			}
 			if err != nil {
 				log.Fatal(err)
 			}
 			if msg.command == "PRIVMSG" {
 				echo := Message{client.nick, msg.command, msg.parameters}
 				client.handlePrivmsg(echo)
-			}
-			if msg.command == "QUIT" {
-				client.ui.App.Stop()
-				return
 			}
 		}
 	})

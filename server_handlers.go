@@ -21,6 +21,26 @@ func (client *Client) handleNotice(msg Message) {
 	client.print("%s %s\n", msg.parameters[0], msg.parameters[1])
 }
 
+func (client *Client) handleListStart(msg Message) {
+	client.print("\n")
+}
+
+func (client *Client) handleList(msg Message) {
+	channel := msg.parameters[1]
+	userCount := msg.parameters[2]
+	topic := msg.parameters[len(msg.parameters)-1]
+
+	if topic != "" {
+		client.print("- %s: %s current users - %s\n", channel, userCount, topic)
+	} else {
+		client.print("- %s: %s current users\n", channel, userCount)
+	}
+}
+
+func (client *Client) handleListEnd(msg Message) {
+	client.print("\n")
+}
+
 func (client *Client) handleNames(msg Message) {
 	channel := msg.parameters[2]
 	members := strings.Fields(msg.parameters[len(msg.parameters)-1])

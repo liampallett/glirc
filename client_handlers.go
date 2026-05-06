@@ -10,6 +10,7 @@ func (client *Client) cmdHelp(args string) (Message, error) {
 		"motd":     {"display current server message of the day", ""},
 		"clear":    {"clear the chat window", ""},
 		"quit":     {"quit the application", "optional quit message"},
+		"list":     {"lists all channels and their topics", "filter with >, <"},
 		"nick":     {"change your nickname displayed on the server", "new nickname"},
 		"join":     {"join the specified channel", "#channel name"},
 		"msg":      {"privately message a user on the server", "username, message"},
@@ -60,6 +61,13 @@ func (client *Client) cmdQuit(args string) (Message, error) {
 		return Message{"", "QUIT", []string{args}}, nil
 	}
 	return Message{"", "QUIT", []string{}}, nil
+}
+
+func (client *Client) cmdList(args string) (Message, error) {
+	if args != "" {
+		return Message{"", "LIST", []string{args}}, nil
+	}
+	return Message{"", "LIST", []string{}}, nil
 }
 
 func (client *Client) cmdNick(args string) (Message, error) {
