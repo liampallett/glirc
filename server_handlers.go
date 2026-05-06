@@ -5,6 +5,18 @@ import (
 	"strings"
 )
 
+func (client *Client) handleMOTDStart(msg Message) {
+	client.print("%s\n", msg.parameters[1])
+}
+
+func (client *Client) handleMOTD(msg Message) {
+	client.print("%s\n", msg.parameters[1])
+}
+
+func (client *Client) handleMOTDEnd(msg Message) {
+	client.print("%s\n", msg.parameters[1])
+}
+
 func (client *Client) handleNames(msg Message) {
 	channel := msg.parameters[2]
 	members := strings.Fields(msg.parameters[len(msg.parameters)-1])

@@ -5,6 +5,13 @@ import (
 	"strings"
 )
 
+func (client *Client) cmdMOTD(args string) (Message, error) {
+	if args != "" {
+		return Message{"", "MOTD", []string{args}}, nil
+	}
+	return Message{"", "MOTD", []string{}}, nil
+}
+
 func (client *Client) cmdQuit(args string) (Message, error) {
 	if args != "" {
 		return Message{"", "QUIT", []string{args}}, nil
@@ -22,6 +29,7 @@ func (client *Client) cmdNick(args string) (Message, error) {
 func (client *Client) cmdJoin(args string) (Message, error) {
 	if args != "" {
 		client.currentChannel = args
+		client.ui.Chat.Clear()
 		return Message{"", "JOIN", []string{client.currentChannel}}, nil
 	}
 	return Message{}, errors.New("specify channel to join")
@@ -57,6 +65,7 @@ func (client *Client) cmdPart(args string) (Message, error) {
 	if channel == client.currentChannel {
 		client.currentChannel = ""
 	}
+	client.ui.Chat.Clear()
 	return Message{"", "PART", []string{channel, partMsg}}, nil
 }
 

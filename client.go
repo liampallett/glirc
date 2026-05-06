@@ -38,6 +38,9 @@ func NewClient(nick, user, server string, port int, ui UI) *Client {
 		"QUIT":    client.handleQuit,
 		"NICK":    client.handleNick,
 		"353":     client.handleNames,
+		"375":     client.handleMOTDStart,
+		"372":     client.handleMOTD,
+		"376":     client.handleMOTDEnd,
 	}
 	return client
 }
@@ -120,6 +123,8 @@ func (client *Client) parseInput(line string) (Message, error) {
 	}
 
 	switch command {
+	case "motd":
+		return client.cmdMOTD(args)
 	case "quit":
 		return client.cmdQuit(args)
 	case "nick":
