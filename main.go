@@ -50,8 +50,7 @@ func main() {
 			log.Fatal(err)
 		}
 	}(client.conn)
-	err = client.register()
-	if err != nil {
+	if err = client.register(); err != nil {
 		log.Fatal(err)
 	}
 
