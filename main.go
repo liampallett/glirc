@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"net"
 
 	"github.com/gdamore/tcell/v2"
 )
@@ -22,13 +23,17 @@ func main() {
 		text := client.ui.Input.GetText()
 		client.ui.Input.SetText("")
 
-		msg, err := client.parseInput(text)
+		var msg Message
+		msg, err = client.parseInput(text)
 		if err != nil {
 			client.print("%s\n", err)
 			return
 		}
 		if msg.command != "" {
-			client.send(msg)
+			err = client.send(msg)
+			if err != nil {
+
+			}
 			if msg.command == "PRIVMSG" {
 				echo := Message{client.nick, msg.command, msg.parameters}
 				client.handlePrivmsg(echo)
@@ -39,8 +44,16 @@ func main() {
 	if err = client.connect(); err != nil {
 		log.Fatal(err)
 	}
-	defer client.conn.Close()
-	client.register()
+	defer func(conn net.Conn) {
+		err = conn.Close()
+		if err != nil {
+			log.Fatal(err)
+		}
+	}(client.conn)
+	err = client.register()
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	go client.readLoop()
 	if err = ui.App.Run(); err != nil {
