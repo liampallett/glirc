@@ -5,6 +5,43 @@ import (
 	"strings"
 )
 
+func (client *Client) cmdHelp(args string) (Message, error) {
+	cmds := map[string][]string{
+		"motd":     {"display current server message of the day", ""},
+		"quit":     {"quit the application", "optional quit message"},
+		"nick":     {"change your nickname displayed on the server", "new nickname"},
+		"join":     {"join the specified channel", "#channel name"},
+		"msg":      {"privately message a user on the server", "username, message"},
+		"part":     {"leave a channel", "channel to leave (default: current), optional parting message"},
+		"me":       {"send a message from yourself", "message"},
+		"ignore":   {"add a user to your ignore list (will not see messages, join, part, quit, etc.)", "user nick"},
+		"unignore": {"remove a user to your ignore list", "user nick"},
+		"ignores":  {"display ignore list", ""},
+	}
+
+	if args != "" {
+		cmd := args
+		cmdDesc := cmds[cmd][0]
+		cmdArgs := cmds[cmd][1]
+		if cmdArgs != "" {
+			client.print("/%s - %s\n\t%s\n", cmd, cmdDesc, cmdArgs)
+		} else {
+			client.print("/%s - %s\n", cmd, cmdDesc)
+		}
+	} else {
+		for cmd, blurb := range cmds {
+			cmdDesc := blurb[0]
+			cmdArgs := blurb[1]
+			if cmdArgs != "" {
+				client.print("/%s - %s\n\t%s\n", cmd, cmdDesc, cmdArgs)
+			} else {
+				client.print("/%s - %s\n", cmd, cmdDesc)
+			}
+		}
+	}
+	return Message{}, nil
+}
+
 func (client *Client) cmdMOTD(args string) (Message, error) {
 	if args != "" {
 		return Message{"", "MOTD", []string{args}}, nil

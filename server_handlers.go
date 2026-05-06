@@ -10,11 +10,15 @@ func (client *Client) handleMOTDStart(msg Message) {
 }
 
 func (client *Client) handleMOTD(msg Message) {
-	client.print("%s\n", msg.parameters[1])
+	client.print("%s\t\n", msg.parameters[1][2:])
 }
 
 func (client *Client) handleMOTDEnd(msg Message) {
-	client.print("%s\n", msg.parameters[1])
+	client.print("\n")
+}
+
+func (client *Client) handleNotice(msg Message) {
+	client.print("%s %s\n", msg.parameters[0], msg.parameters[1])
 }
 
 func (client *Client) handleNames(msg Message) {
@@ -24,6 +28,10 @@ func (client *Client) handleNames(msg Message) {
 		client.channelMembers[channel] = append(client.channelMembers[channel], element)
 	}
 	client.refreshNames()
+}
+
+func (client *Client) handleNamesEnd(msg Message) {
+	client.print("\n")
 }
 
 func (client *Client) handlePing(msg Message) {

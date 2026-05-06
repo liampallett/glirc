@@ -31,6 +31,7 @@ func NewClient(nick, user, server string, port int, ui UI) *Client {
 	client.ignored = map[string]bool{}
 	client.channelMembers = map[string][]string{}
 	client.handlers = map[string]func(Message){
+		"NOTICE":  client.handleNotice,
 		"PING":    client.handlePing,
 		"PRIVMSG": client.handlePrivmsg,
 		"JOIN":    client.handleJoin,
@@ -38,6 +39,7 @@ func NewClient(nick, user, server string, port int, ui UI) *Client {
 		"QUIT":    client.handleQuit,
 		"NICK":    client.handleNick,
 		"353":     client.handleNames,
+		"366":     client.handleNamesEnd,
 		"375":     client.handleMOTDStart,
 		"372":     client.handleMOTD,
 		"376":     client.handleMOTDEnd,
@@ -101,6 +103,12 @@ func (client *Client) refreshNames() {
 	for _, name := range client.channelMembers[client.currentChannel] {
 		client.ui.Members.AddItem(name, "", 0, nil)
 	}
+	memberCount := len(client.channelMembers[client.currentChannel])
+	if memberCount < 1 {
+		client.ui.Members.SetTitle("Members")
+	} else {
+		client.ui.Members.SetTitle(fmt.Sprintf("Members - %d", memberCount))
+	}
 }
 
 func (client *Client) parseInput(line string) (Message, error) {
@@ -123,6 +131,8 @@ func (client *Client) parseInput(line string) (Message, error) {
 	}
 
 	switch command {
+	case "help":
+		return client.cmdHelp(args)
 	case "motd":
 		return client.cmdMOTD(args)
 	case "quit":
@@ -144,6 +154,6 @@ func (client *Client) parseInput(line string) (Message, error) {
 	case "ignores":
 		return client.cmdIgnores(args)
 	default:
-		return Message{}, errors.New("unrecognised command")
+		return Message{}, errors.New("unrecognised command (see /help)")
 	}
 }
