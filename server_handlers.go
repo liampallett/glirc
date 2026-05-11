@@ -48,7 +48,11 @@ func (client *Client) handleNames(msg Message) {
 	channel := msg.parameters[2]
 	members := strings.Fields(msg.parameters[len(msg.parameters)-1])
 	for _, element := range members {
-		client.channels[channel].members = append(client.channels[channel].members, element)
+		ch, ok := client.channels[channel]
+		if !ok {
+			return
+		}
+		ch.members = append(ch.members, element)
 	}
 	client.refreshNames()
 }
@@ -93,7 +97,11 @@ func (client *Client) handleJoin(msg Message) {
 		client.ui.Channels.AddItem(channel, "", 0, nil)
 	} else {
 		client.printChannel(channel, "%s joined %s\n", nick, channel)
-		client.channels[channel].members = append(client.channels[channel].members, nick)
+		ch, ok := client.channels[channel]
+		if !ok {
+			return
+		}
+		ch.members = append(ch.members, nick)
 	}
 	client.refreshNames()
 }
@@ -114,7 +122,11 @@ func (client *Client) handlePart(msg Message) {
 		}
 	} else {
 		client.printChannel(channel, "%s left %s\n", nick, channel)
-		client.channels[channel].members = slices.DeleteFunc(client.channels[channel].members, func(s string) bool {
+		ch, ok := client.channels[channel]
+		if !ok {
+			return
+		}
+		ch.members = slices.DeleteFunc(ch.members, func(s string) bool {
 			return s == nick
 		})
 	}

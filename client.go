@@ -22,7 +22,7 @@ type Client struct {
 
 func NewClient(nick, user, address string, port int, ui UI) *Client {
 	server := &Server{address: address, port: port, incoming: make(chan Message)}
-	client := &Client{nick: nick, user: user, server: server}
+	client := &Client{nick: nick, user: user, server: server, ui: ui}
 
 	go func() {
 		for msg := range client.server.incoming {
@@ -75,23 +75,37 @@ func (client *Client) register() error {
 }
 
 func (client *Client) print(format string, args ...any) {
-	fmt.Fprintf(client.ui.Chat, format, args...)
+	_, err := fmt.Fprintf(client.ui.Chat, format, args...)
+	if err != nil {
+		return
+	}
 }
 
 func (client *Client) printChannel(channel string, format string, args ...any) {
 	text := fmt.Sprintf(format, args...)
-	client.channels[channel].history = append(client.channels[channel].history, text)
+	ch, ok := client.channels[channel]
+	if !ok {
+		return
+	}
+	ch.history = append(ch.history, text)
 	if channel == client.currentChannel {
-		fmt.Fprintf(client.ui.Chat, text)
+		_, err := fmt.Fprintf(client.ui.Chat, text)
+		if err != nil {
+			return
+		}
 	}
 }
 
 func (client *Client) refreshNames() {
 	client.ui.Members.Clear()
-	for _, name := range client.channels[client.currentChannel].members {
+	ch, ok := client.channels[client.currentChannel]
+	if !ok {
+		return
+	}
+	for _, name := range ch.members {
 		client.ui.Members.AddItem(name, "", 0, nil)
 	}
-	memberCount := len(client.channels[client.currentChannel].members)
+	memberCount := len(ch.members)
 	if memberCount < 1 {
 		client.ui.Members.SetTitle("Members")
 	} else {

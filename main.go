@@ -22,7 +22,14 @@ func main() {
 		client.ui.Chat.SetTitle(mainText)
 		client.refreshNames()
 		client.ui.Chat.Clear()
-		fmt.Fprint(client.ui.Chat, strings.Join(client.channels[mainText].history, ""))
+		ch, ok := client.channels[mainText]
+		if !ok {
+			return
+		}
+		_, err = fmt.Fprint(client.ui.Chat, strings.Join(ch.history, ""))
+		if err != nil {
+			return
+		}
 		client.ui.App.SetFocus(client.ui.Input)
 	})
 
