@@ -36,6 +36,16 @@ func TestParse(t *testing.T) {
 			want:    Message{"lpall", "MODE", []string{"lpall", "+iw"}},
 			wantErr: false,
 		},
+		{
+			input:   "",
+			want:    Message{},
+			wantErr: true,
+		},
+		{
+			input:   ":prefixonly",
+			want:    Message{},
+			wantErr: true,
+		},
 	}
 
 	for _, tt := range tests {

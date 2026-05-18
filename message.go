@@ -42,12 +42,12 @@ func parse(line string) (Message, error) {
 			parameters = append(parameters, line[1:])
 			break
 		}
-		index := strings.Index(line, " ")
-		if index == -1 {
+		spaceIndex := strings.Index(line, " ")
+		if spaceIndex == -1 {
 			parameters = append(parameters, line)
 			break
 		}
-		parameters = append(parameters, line[0:index])
+		parameters = append(parameters, line[0:spaceIndex])
 		line = strings.SplitN(line, " ", 2)[1]
 	}
 
@@ -70,9 +70,13 @@ func (msg Message) String() string {
 			builder.WriteByte(' ')
 			builder.WriteString(element)
 		}
-
-		builder.WriteString(" :")
-		builder.WriteString(msg.parameters[len(msg.parameters)-1])
+		last := msg.parameters[len(msg.parameters)-1]
+		if strings.ContainsAny(last, " ") || strings.HasPrefix(last, ":") {
+			builder.WriteString(" :")
+		} else {
+			builder.WriteString(" ")
+		}
+		builder.WriteString(last)
 	}
 
 	builder.WriteString("\r\n")
@@ -81,5 +85,8 @@ func (msg Message) String() string {
 }
 
 func (msg Message) Nick() string {
+	if !strings.Contains(msg.prefix, "!") {
+		return ""
+	}
 	return strings.SplitN(msg.prefix, "!", 2)[0]
 }

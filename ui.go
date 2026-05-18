@@ -25,7 +25,6 @@ func initUI() UI {
 	chat.SetScrollable(true)
 	chat.SetChangedFunc(func() {
 		chat.ScrollToEnd()
-		app.QueueUpdateDraw(func() {})
 	})
 	chat.SetWordWrap(true)
 

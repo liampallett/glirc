@@ -18,19 +18,21 @@ func main() {
 	client := NewClient(config.Nick, config.User, config.Server, config.Port, ui)
 
 	client.ui.Channels.SetSelectedFunc(func(index int, mainText string, secondaryText string, shortcut rune) {
-		client.currentChannel = mainText
-		client.ui.Chat.SetTitle(mainText)
-		client.refreshNames()
-		client.ui.Chat.Clear()
-		ch, ok := client.channels[mainText]
-		if !ok {
-			return
-		}
-		_, err = fmt.Fprint(client.ui.Chat, strings.Join(ch.history, ""))
-		if err != nil {
-			return
-		}
-		client.ui.App.SetFocus(client.ui.Input)
+		client.ui.App.QueueUpdateDraw(func() {
+			client.currentChannel = mainText
+			client.ui.Chat.SetTitle(mainText)
+			client.refreshNames()
+			client.ui.Chat.Clear()
+			ch, ok := client.channels[mainText]
+			if !ok {
+				return
+			}
+			_, err = fmt.Fprint(client.ui.Chat, strings.Join(ch.history, ""))
+			if err != nil {
+				return
+			}
+			client.ui.App.SetFocus(client.ui.Input)
+		})
 	})
 
 	client.ui.App.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {

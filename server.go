@@ -12,11 +12,14 @@ type Server struct {
 	port     int
 	conn     net.Conn
 	incoming chan Message
+	err      error
 }
 
 func (server *Server) connect() error {
 	conn, err := tls.Dial("tcp", fmt.Sprintf("%s:%d", server.address, server.port), nil)
-	server.conn = conn
+	if err == nil {
+		server.conn = conn
+	}
 	return err
 }
 
@@ -36,4 +39,7 @@ func (server *Server) readLoop() {
 		}
 		server.incoming <- msg
 	}
+	server.err = scanner.Err()
+
+	close(server.incoming)
 }

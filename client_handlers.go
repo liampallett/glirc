@@ -34,9 +34,9 @@ func (client *Client) cmdHelp(args string) (Message, error) {
 			client.print("/%s - %s\n", cmd, cmdDesc)
 		}
 	} else {
-		for cmd, blurb := range cmds {
-			cmdDesc := blurb[0]
-			cmdArgs := blurb[1]
+		for cmd, info := range cmds {
+			cmdDesc := info[0]
+			cmdArgs := info[1]
 			if cmdArgs != "" {
 				client.print("/%s - %s\n\t%s\n", cmd, cmdDesc, cmdArgs)
 			} else {
@@ -49,6 +49,9 @@ func (client *Client) cmdHelp(args string) (Message, error) {
 
 func (client *Client) cmdClear(args string) (Message, error) {
 	client.ui.Chat.Clear()
+	if ch, ok := client.channels[client.currentChannel]; ok {
+		ch.history = nil
+	}
 	return Message{}, nil
 }
 
@@ -82,10 +85,7 @@ func (client *Client) cmdNick(args string) (Message, error) {
 
 func (client *Client) cmdJoin(args string) (Message, error) {
 	if args != "" {
-		client.currentChannel = args
-		client.ui.Chat.SetTitle(client.currentChannel)
-		client.ui.Chat.Clear()
-		return Message{"", "JOIN", []string{client.currentChannel}}, nil
+		return Message{"", "JOIN", []string{args}}, nil
 	}
 	return Message{}, errors.New("specify channel to join")
 }
@@ -104,10 +104,10 @@ func (client *Client) cmdPart(args string) (Message, error) {
 
 	if args != "" {
 		if args[0] == '#' {
-			arg := strings.SplitN(args, " ", 2)
-			channel = arg[0]
-			if len(arg) > 1 {
-				partMsg = arg[1]
+			parts := strings.SplitN(args, " ", 2)
+			channel = parts[0]
+			if len(parts) > 1 {
+				partMsg = parts[1]
 			}
 		} else {
 			partMsg = args
@@ -117,12 +117,11 @@ func (client *Client) cmdPart(args string) (Message, error) {
 	if channel == "" {
 		return Message{}, errors.New("not in a channel")
 	}
-	if channel == client.currentChannel {
-		client.currentChannel = ""
-		client.ui.Chat.SetTitle(client.currentChannel)
-	}
 	client.ui.Chat.Clear()
-	return Message{"", "PART", []string{channel, partMsg}}, nil
+	if partMsg != "" {
+		return Message{"", "PART", []string{channel, partMsg}}, nil
+	}
+	return Message{"", "PART", []string{channel}}, nil
 }
 
 func (client *Client) cmdMe(args string) (Message, error) {

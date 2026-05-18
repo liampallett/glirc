@@ -27,6 +27,7 @@ func NewClient(nick, user, address string, port int, ui UI) *Client {
 	go func() {
 		for msg := range client.server.incoming {
 			client.ui.App.QueueUpdateDraw(func() {
+				msg := msg
 				if handler, ok := client.handlers[msg.command]; ok {
 					handler(msg)
 				} else {
@@ -34,6 +35,9 @@ func NewClient(nick, user, address string, port int, ui UI) *Client {
 				}
 			})
 		}
+		client.ui.App.QueueUpdateDraw(func() {
+			client.print("disconnected from server")
+		})
 	}()
 
 	client.channels = map[string]*Channel{}
@@ -89,7 +93,7 @@ func (client *Client) printChannel(channel string, format string, args ...any) {
 	}
 	ch.history = append(ch.history, text)
 	if channel == client.currentChannel {
-		_, err := fmt.Fprintf(client.ui.Chat, text)
+		_, err := fmt.Fprint(client.ui.Chat, text)
 		if err != nil {
 			return
 		}
