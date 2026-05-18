@@ -5,43 +5,31 @@ import (
 	"strings"
 )
 
+func optionalArgs(args string) []string {
+	if args != "" {
+		return []string{args}
+	}
+	return []string{}
+}
+
 func (client *Client) cmdHelp(args string) (Message, error) {
-	cmds := map[string][]string{
-		"motd":     {"display current server message of the day", ""},
-		"clear":    {"clear the chat window", ""},
-		"quit":     {"quit the application", "optional quit message"},
-		"list":     {"lists all channels and their topics", "filter with >, <"},
-		"nick":     {"change your nickname displayed on the server", "new nickname"},
-		"join":     {"join the specified channel", "#channel name"},
-		"msg":      {"privately message a user on the server", "username, message"},
-		"part":     {"leave a channel", "channel to leave (default: current), optional parting message"},
-		"me":       {"send a message from yourself", "message"},
-		"ignore":   {"add a user to your ignore list (will not see messages, join, part, quit, etc.)", "user nick"},
-		"unignore": {"remove a user to your ignore list", "user nick"},
-		"ignores":  {"display ignore list", ""},
+	printCmd := func(cmd string, def commandDef) {
+		if def.args != "" {
+			client.printStatus("/%s - %s\n\t%s\n", cmd, def.desc, def.args)
+		} else {
+			client.printStatus("/%s - %s\n", cmd, def.desc)
+		}
 	}
 
 	if args != "" {
-		cmd := args
-		if cmds[cmd] == nil {
+		def, ok := client.commands[args]
+		if !ok {
 			return Message{}, errors.New("unknown command")
 		}
-		cmdDesc := cmds[cmd][0]
-		cmdArgs := cmds[cmd][1]
-		if cmdArgs != "" {
-			client.print("/%s - %s\n\t%s\n", cmd, cmdDesc, cmdArgs)
-		} else {
-			client.print("/%s - %s\n", cmd, cmdDesc)
-		}
+		printCmd(args, def)
 	} else {
-		for cmd, info := range cmds {
-			cmdDesc := info[0]
-			cmdArgs := info[1]
-			if cmdArgs != "" {
-				client.print("/%s - %s\n\t%s\n", cmd, cmdDesc, cmdArgs)
-			} else {
-				client.print("/%s - %s\n", cmd, cmdDesc)
-			}
+		for cmd, def := range client.commands {
+			printCmd(cmd, def)
 		}
 	}
 	return Message{}, nil
@@ -56,24 +44,15 @@ func (client *Client) cmdClear(args string) (Message, error) {
 }
 
 func (client *Client) cmdMOTD(args string) (Message, error) {
-	if args != "" {
-		return Message{"", "MOTD", []string{args}}, nil
-	}
-	return Message{"", "MOTD", []string{}}, nil
+	return Message{"", "MOTD", optionalArgs(args)}, nil
 }
 
 func (client *Client) cmdQuit(args string) (Message, error) {
-	if args != "" {
-		return Message{"", "QUIT", []string{args}}, nil
-	}
-	return Message{"", "QUIT", []string{}}, nil
+	return Message{"", "QUIT", optionalArgs(args)}, nil
 }
 
 func (client *Client) cmdList(args string) (Message, error) {
-	if args != "" {
-		return Message{"", "LIST", []string{args}}, nil
-	}
-	return Message{"", "LIST", []string{}}, nil
+	return Message{"", "LIST", optionalArgs(args)}, nil
 }
 
 func (client *Client) cmdNick(args string) (Message, error) {
@@ -117,7 +96,6 @@ func (client *Client) cmdPart(args string) (Message, error) {
 	if channel == "" {
 		return Message{}, errors.New("not in a channel")
 	}
-	client.ui.Chat.Clear()
 	if partMsg != "" {
 		return Message{"", "PART", []string{channel, partMsg}}, nil
 	}
@@ -153,7 +131,7 @@ func (client *Client) cmdUnignore(args string) (Message, error) {
 func (client *Client) cmdIgnores(args string) (Message, error) {
 	if len(client.ignored) > 0 {
 		for nick := range client.ignored {
-			client.print("%s\n", nick)
+			client.printStatus("%s\n", nick)
 		}
 		return Message{}, nil
 	}

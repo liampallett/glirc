@@ -13,6 +13,22 @@ type Config struct {
 	Port   int    `json:"port"`
 }
 
+func (config Config) Validate() error {
+	if config.Nick == "" {
+		return errors.New("config: nick is required")
+	}
+	if config.User == "" {
+		return errors.New("config: user is required")
+	}
+	if config.Server == "" {
+		return errors.New("config: server is required")
+	}
+	if config.Port == 0 {
+		return errors.New("config: port is required")
+	}
+	return nil
+}
+
 func loadConfig(path string) (Config, error) {
 	var config Config
 
@@ -26,18 +42,5 @@ func loadConfig(path string) (Config, error) {
 		return Config{}, err
 	}
 
-	if config.Nick == "" {
-		return Config{}, errors.New("config: nick is required")
-	}
-	if config.User == "" {
-		return Config{}, errors.New("config: user is required")
-	}
-	if config.Server == "" {
-		return Config{}, errors.New("config: server is required")
-	}
-	if config.Port == 0 {
-		return Config{}, errors.New("config: port is required")
-	}
-
-	return config, nil
+	return config, config.Validate()
 }

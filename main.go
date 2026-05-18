@@ -1,10 +1,8 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"net"
-	"strings"
 
 	"github.com/gdamore/tcell/v2"
 )
@@ -19,18 +17,7 @@ func main() {
 
 	client.ui.Channels.SetSelectedFunc(func(index int, mainText string, secondaryText string, shortcut rune) {
 		client.ui.App.QueueUpdateDraw(func() {
-			client.currentChannel = mainText
-			client.ui.Chat.SetTitle(mainText)
-			client.refreshNames()
-			client.ui.Chat.Clear()
-			ch, ok := client.channels[mainText]
-			if !ok {
-				return
-			}
-			_, err = fmt.Fprint(client.ui.Chat, strings.Join(ch.history, ""))
-			if err != nil {
-				return
-			}
+			client.switchChannel(mainText)
 			client.ui.App.SetFocus(client.ui.Input)
 		})
 	})
@@ -57,7 +44,7 @@ func main() {
 		var msg Message
 		msg, err = client.parseInput(text)
 		if err != nil {
-			client.print("%s\n", err)
+			client.printStatus("%s\n", err)
 			return
 		}
 		if msg.command != "" {

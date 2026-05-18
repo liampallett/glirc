@@ -24,7 +24,7 @@ func (server *Server) connect() error {
 }
 
 func (server *Server) send(msg Message) error {
-	_, err := fmt.Fprintf(server.conn, "%s", msg)
+	_, err := fmt.Fprint(server.conn, msg)
 	return err
 }
 

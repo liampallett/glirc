@@ -48,10 +48,17 @@ func parse(line string) (Message, error) {
 			break
 		}
 		parameters = append(parameters, line[0:spaceIndex])
-		line = strings.SplitN(line, " ", 2)[1]
+		line = line[spaceIndex+1:]
 	}
 
 	return Message{prefix, command, parameters}, nil
+}
+
+func parseAction(text string) (string, bool) {
+	if strings.HasPrefix(text, "\x01ACTION ") && strings.HasSuffix(text, "\x01") {
+		return text[8 : len(text)-1], true
+	}
+	return "", false
 }
 
 func (msg Message) String() string {
@@ -89,4 +96,11 @@ func (msg Message) Nick() string {
 		return ""
 	}
 	return strings.SplitN(msg.prefix, "!", 2)[0]
+}
+
+func (msg Message) param(n int) (string, bool) {
+	if n < len(msg.parameters) {
+		return msg.parameters[n], true
+	}
+	return "", false
 }

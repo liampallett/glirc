@@ -6,6 +6,12 @@ import (
 	"strings"
 )
 
+type commandDef struct {
+	desc string
+	args string
+	fn   func(string) (Message, error)
+}
+
 type Client struct {
 	nick   string
 	user   string
@@ -16,6 +22,7 @@ type Client struct {
 
 	ignored  map[string]bool
 	handlers map[string]func(Message)
+	commands map[string]commandDef
 
 	ui UI
 }
@@ -27,16 +34,18 @@ func NewClient(nick, user, address string, port int, ui UI) *Client {
 	go func() {
 		for msg := range client.server.incoming {
 			client.ui.App.QueueUpdateDraw(func() {
-				msg := msg
+				if client.ignored[msg.Nick()] {
+					return
+				}
 				if handler, ok := client.handlers[msg.command]; ok {
 					handler(msg)
 				} else {
-					client.print("%s\n", msg)
+					client.printStatus("%s\n", msg)
 				}
 			})
 		}
 		client.ui.App.QueueUpdateDraw(func() {
-			client.print("disconnected from server")
+			client.printStatus("disconnected from server")
 		})
 	}()
 
@@ -59,6 +68,21 @@ func NewClient(nick, user, address string, port int, ui UI) *Client {
 		"372":     client.handleMOTD,
 		"376":     client.handleMOTDEnd,
 	}
+	client.commands = map[string]commandDef{
+		"help":     {"display available commands", "optional command name", client.cmdHelp},
+		"clear":    {"clear the chat window", "", client.cmdClear},
+		"motd":     {"display current server message of the day", "", client.cmdMOTD},
+		"list":     {"lists all channels and their topics", "filter with >, <", client.cmdList},
+		"quit":     {"quit the application", "optional quit message", client.cmdQuit},
+		"nick":     {"change your nickname displayed on the server", "new nickname", client.cmdNick},
+		"join":     {"join the specified channel", "#channel name", client.cmdJoin},
+		"msg":      {"privately message a user on the server", "username, message", client.cmdMsg},
+		"part":     {"leave a channel", "channel to leave (default: current), optional parting message", client.cmdPart},
+		"me":       {"send a message from yourself", "message", client.cmdMe},
+		"ignore":   {"add a user to your ignore list (will not see messages, join, part, quit, etc.)", "user nick", client.cmdIgnore},
+		"unignore": {"remove a user from your ignore list", "user nick", client.cmdUnignore},
+		"ignores":  {"display ignore list", "", client.cmdIgnores},
+	}
 	return client
 }
 
@@ -70,19 +94,21 @@ func (client *Client) register() error {
 	}
 
 	user := Message{"", "USER", []string{client.nick, "0", "*", client.user}}
-	err = client.server.send(user)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return client.server.send(user)
 }
 
-func (client *Client) print(format string, args ...any) {
+func (client *Client) printStatus(format string, args ...any) {
 	_, err := fmt.Fprintf(client.ui.Chat, format, args...)
 	if err != nil {
 		return
 	}
+}
+
+func (client *Client) anyChannel() string {
+	for name := range client.channels {
+		return name
+	}
+	return ""
 }
 
 func (client *Client) printChannel(channel string, format string, args ...any) {
@@ -110,11 +136,24 @@ func (client *Client) refreshNames() {
 		client.ui.Members.AddItem(name, "", 0, nil)
 	}
 	memberCount := len(ch.members)
-	if memberCount < 1 {
-		client.ui.Members.SetTitle("Members")
-	} else {
-		client.ui.Members.SetTitle(fmt.Sprintf("Members - %d", memberCount))
+	client.ui.Members.SetTitle(memberCountTitle(memberCount))
+}
+
+func (client *Client) switchChannel(name string) {
+	client.currentChannel = name
+	client.ui.Chat.SetTitle(name)
+	client.ui.Chat.Clear()
+	client.refreshNames()
+	if ch, ok := client.channels[name]; ok {
+		fmt.Fprintf(client.ui.Chat, strings.Join(ch.history, ""))
 	}
+}
+
+func memberCountTitle(n int) string {
+	if n < 1 {
+		return "Members"
+	}
+	return fmt.Sprintf("Members - %d", n)
 }
 
 func (client *Client) parseInput(line string) (Message, error) {
@@ -136,34 +175,8 @@ func (client *Client) parseInput(line string) (Message, error) {
 		args = parts[1]
 	}
 
-	switch command {
-	case "help":
-		return client.cmdHelp(args)
-	case "clear":
-		return client.cmdClear(args)
-	case "motd":
-		return client.cmdMOTD(args)
-	case "list":
-		return client.cmdList(args)
-	case "quit":
-		return client.cmdQuit(args)
-	case "nick":
-		return client.cmdNick(args)
-	case "join":
-		return client.cmdJoin(args)
-	case "msg":
-		return client.cmdMsg(args)
-	case "part":
-		return client.cmdPart(args)
-	case "me":
-		return client.cmdMe(args)
-	case "ignore":
-		return client.cmdIgnore(args)
-	case "unignore":
-		return client.cmdUnignore(args)
-	case "ignores":
-		return client.cmdIgnores(args)
-	default:
-		return Message{}, errors.New("unrecognised command (see /help)")
+	if def, ok := client.commands[command]; ok {
+		return def.fn(args)
 	}
+	return Message{}, errors.New("unrecognised command (see /help)")
 }
